@@ -5,24 +5,17 @@ let scheduleData = {};
 
 async function loadSchedule() {
     try {
-        const url = new URL("./schedule.json", window.location.href);
-
-        console.log("Страница:", window.location.href);
-        console.log("Запрашиваем JSON:", url.href);
-
-        const response = await fetch(url.href);
-
-        console.log("Статус:", response.status);
+        const response = await fetch(
+            new URL("schedule.json", window.location.href)
+        );
 
         if (!response.ok) {
             throw new Error(
-                `HTTP ${response.status}: ${url.href}`
+                `HTTP ${response.status}: ${response.statusText}`
             );
         }
 
         scheduleData = await response.json();
-
-        console.log("JSON загружен:", scheduleData);
 
         loadGroups();
 
@@ -31,12 +24,11 @@ async function loadSchedule() {
 
         scheduleContainer.innerHTML = `
             <p style="color:red;">
-                ${error.message}
+                Ошибка загрузки расписания: ${error.message}
             </p>
         `;
     }
 }
-
 function loadGroups() {
 
     Object.keys(scheduleData)
