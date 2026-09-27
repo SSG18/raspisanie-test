@@ -6,21 +6,21 @@ let scheduleData = {};
 async function loadSchedule() {
     try {
         const response = await fetch(
-            new URL("schedule.json", window.location.href)
+            "https://ssg18.github.io/raspisanie-test/schedule.json"
         );
 
         if (!response.ok) {
-            throw new Error(
-                `HTTP ${response.status}: ${response.statusText}`
-            );
+            throw new Error(`HTTP ${response.status}`);
         }
 
         scheduleData = await response.json();
 
+        console.log("Расписание загружено:", scheduleData);
+
         loadGroups();
 
     } catch (error) {
-        console.error(error);
+        console.error("Ошибка загрузки:", error);
 
         scheduleContainer.innerHTML = `
             <p style="color:red;">
@@ -29,6 +29,7 @@ async function loadSchedule() {
         `;
     }
 }
+
 function loadGroups() {
 
     Object.keys(scheduleData)
