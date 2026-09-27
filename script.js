@@ -5,7 +5,7 @@ let scheduleData = {};
 
 async function loadSchedule() {
     try {
-        const response = await fetch("/schedule.json");
+        const response = await fetch("schedule.json");
 
         if (!response.ok) {
             throw new Error("Не удалось загрузить расписание");
