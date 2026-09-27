@@ -1,0 +1,63 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    color: #222;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+h1 {
+    margin-bottom: 25px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+select {
+    width: 100%;
+    max-width: 400px;
+    padding: 12px;
+    font-size: 16px;
+    margin-bottom: 30px;
+}
+
+.day {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.day h2 {
+    margin-top: 0;
+}
+
+.lesson {
+    border-left: 4px solid #333;
+    padding: 12px 15px;
+    margin: 12px 0;
+    background: #f8f8f8;
+}
+
+.lesson-time {
+    font-weight: bold;
+}
+
+.lesson-subject {
+    font-size: 18px;
+    margin-top: 5px;
+}
+
+.lesson-info {
+    margin-top: 5px;
+    color: #666;
+}
