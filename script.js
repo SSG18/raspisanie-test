@@ -15,7 +15,7 @@ const response = await fetch(
 
 ```
     if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        throw new Error("HTTP " + response.status);
     }
 
     scheduleData = await response.json();
@@ -27,24 +27,22 @@ const response = await fetch(
 } catch (error) {
     console.error("Ошибка загрузки расписания:", error);
 
-    scheduleContainer.innerHTML = `
-        <p style="color: red;">
-            Не удалось загрузить расписание.
-        </p>
-    `;
+    scheduleContainer.innerHTML =
+        "<p style='color:red;'>Не удалось загрузить расписание.</p>";
 }
 ```
 
 }
 
 /* =========================
-ЗАПОЛНЕНИЕ СПИСКА ГРУПП
+ЗАПОЛНЕНИЕ ГРУПП
 ========================= */
 
 function fillGroups() {
-groupSelect.replaceChildren();
 
 ```
+groupSelect.innerHTML = "";
+
 const defaultOption = document.createElement("option");
 
 defaultOption.value = "";
@@ -56,7 +54,8 @@ if (!scheduleData || !Array.isArray(scheduleData.groups)) {
     return;
 }
 
-scheduleData.groups.forEach(group => {
+scheduleData.groups.forEach(function(group) {
+
     if (!group || !group.grp) {
         return;
     }
@@ -73,27 +72,36 @@ scheduleData.groups.forEach(group => {
 }
 
 /* =========================
-РАСЧЁТ ПОНЕДЕЛЬНИКА
+ПОНЕДЕЛЬНИК НЕДЕЛИ
 ========================= */
 
 function getMonday(date) {
-const result = new Date(date);
 
 ```
+const result = new Date(date);
+
 result.setHours(0, 0, 0, 0);
 
 const day = result.getDay();
 
-// JS:
-// 0 = воскресенье
-// 1 = понедельник
-// 2 = вторник
-// ...
-// 6 = суббота
+/*
+    JavaScript:
+    0 = воскресенье
+    1 = понедельник
+    2 = вторник
+    3 = среда
+    4 = четверг
+    5 = пятница
+    6 = суббота
+*/
 
-const difference = day === 0 ? -6 : 1 - day;
-
-result.setDate(result.getDate() + difference);
+if (day === 0) {
+    result.setDate(result.getDate() - 6);
+} else {
+    result.setDate(
+        result.getDate() - (day - 1)
+    );
+}
 
 return result;
 ```
@@ -101,71 +109,91 @@ return result;
 }
 
 /* =========================
-ПОЛУЧЕНИЕ НЕДЕЛИ
+РАСЧЁТ ТЕКУЩЕЙ НЕДЕЛИ
 ========================= */
 
 function getCurrentWeekInfo() {
-const today = new Date();
 
 ```
+const today = new Date();
+
 today.setHours(0, 0, 0, 0);
 
+const day = today.getDay();
+
 /*
-    Если сегодня суббота или воскресенье,
+    Если суббота или воскресенье,
     показываем следующую неделю.
 */
 
-const jsDay = today.getDay();
+const targetDate = new Date(today);
 
-let targetDate = new Date(today);
-
-if (jsDay === 0 || jsDay === 6) {
-    targetDate.setDate(targetDate.getDate() + 7);
+if (day === 6 || day === 0) {
+    targetDate.setDate(
+        targetDate.getDate() + 7
+    );
 }
 
 const monday = getMonday(targetDate);
 
 const sunday = new Date(monday);
 
-sunday.setDate(sunday.getDate() + 6);
-
-/*
-    Учебный год начинается 1 сентября.
-
-    Неделя №1 — неделя, в которую попадает 1 сентября.
-*/
-
-const academicYearStart = new Date(
-    today.getFullYear(),
-    8,
-    1
+sunday.setDate(
+    sunday.getDate() + 6
 );
 
+
 /*
-    Если дата находится в январе-августе,
-    учебный год начался 1 сентября прошлого года.
+    1 сентября — начало учебного года.
 */
 
-if (today.getMonth() < 8) {
-    academicYearStart.setFullYear(
-        today.getFullYear() - 1
+let academicYearStart;
+
+if (today.getMonth() >= 8) {
+
+    academicYearStart = new Date(
+        today.getFullYear(),
+        8,
+        1
+    );
+
+} else {
+
+    academicYearStart = new Date(
+        today.getFullYear() - 1,
+        8,
+        1
     );
 }
 
-const firstMonday = getMonday(academicYearStart);
+
+/*
+    Первый понедельник учебного года.
+*/
+
+const firstMonday =
+    getMonday(academicYearStart);
+
+
+/*
+    Сколько полных недель прошло.
+*/
 
 const difference =
-    monday.getTime() - firstMonday.getTime();
+    monday.getTime() -
+    firstMonday.getTime();
 
 const weekNumber =
     Math.floor(
-        difference / (7 * 24 * 60 * 60 * 1000)
+        difference /
+        (7 * 24 * 60 * 60 * 1000)
     ) + 1;
 
+
 return {
-    weekNumber,
-    monday,
-    sunday
+    weekNumber: weekNumber,
+    monday: monday,
+    sunday: sunday
 };
 ```
 
@@ -176,53 +204,70 @@ return {
 ========================= */
 
 function formatDate(date) {
-const day = String(date.getDate()).padStart(2, "0");
-const month = String(date.getMonth() + 1).padStart(2, "0");
-const year = date.getFullYear();
 
 ```
-return `${day}.${month}.${year}`;
+const day =
+    String(date.getDate()).padStart(2, "0");
+
+const month =
+    String(date.getMonth() + 1).padStart(2, "0");
+
+const year =
+    date.getFullYear();
+
+return day + "." + month + "." + year;
 ```
 
 }
 
 /* =========================
-ПРОВЕРКА НЕДЕЛИ ЗАНЯТИЯ
+ПРОВЕРКА НЕДЕЛИ
 ========================= */
 
 function isLessonInWeek(lesson, weekNumber) {
-if (
-lesson.ws === undefined ||
-lesson.ws === null ||
-lesson.ws === ""
-) {
-return true;
-}
 
 ```
-const weeksString = String(lesson.ws)
-    .replace(/–/g, "-")
-    .replace(/—/g, "-")
-    .replace(/\s/g, "");
+if (
+    lesson.ws === undefined ||
+    lesson.ws === null ||
+    lesson.ws === ""
+) {
+    return true;
+}
 
-/*
-    Например:
+const weeksString =
+    String(lesson.ws)
+        .replace(/–/g, "-")
+        .replace(/—/g, "-")
+        .replace(/\s/g, "");
 
-    "2,4,6,8"
-    "1-17"
-    "2,4,6-10"
-*/
 
-const parts = weeksString.split(",");
+const parts =
+    weeksString.split(",");
 
-for (const part of parts) {
 
-    if (part.includes("-")) {
+for (let i = 0; i < parts.length; i++) {
 
-        const range = part.split("-");
+    const part = parts[i];
 
-        const start = Number(range[0]);
-        const end = Number(range[1]);
+
+    /*
+        Например:
+        1-17
+        2-16
+    */
+
+    if (part.indexOf("-") !== -1) {
+
+        const range =
+            part.split("-");
+
+        const start =
+            Number(range[0]);
+
+        const end =
+            Number(range[1]);
+
 
         if (
             !Number.isNaN(start) &&
@@ -235,7 +280,13 @@ for (const part of parts) {
 
     } else {
 
-        const week = Number(part);
+        /*
+            Например:
+            2,4,6,8
+        */
+
+        const week =
+            Number(part);
 
         if (
             !Number.isNaN(week) &&
@@ -252,7 +303,7 @@ return false;
 }
 
 /* =========================
-ОТОБРАЖЕНИЕ РАСПИСАНИЯ
+ПОКАЗ РАСПИСАНИЯ
 ========================= */
 
 function showSchedule(group) {
@@ -267,9 +318,14 @@ if (
 
 scheduleContainer.innerHTML = "";
 
-const weekInfo = getCurrentWeekInfo();
+
+const weekInfo =
+    getCurrentWeekInfo();
+
 
 /*
+    ВАЖНО:
+
     API КГМУ:
 
     1 = воскресенье
@@ -313,81 +369,89 @@ const days = [
    ЗАГОЛОВОК НЕДЕЛИ
    ========================= */
 
-const weekHeader = document.createElement("div");
+const weekHeader =
+    document.createElement("div");
 
-weekHeader.className = "week-header";
+weekHeader.className =
+    "week-header";
 
-weekHeader.innerHTML = `
-    <h2>Неделя №${weekInfo.weekNumber}</h2>
-    <p>
-        ${formatDate(weekInfo.monday)}
-        —
-        ${formatDate(weekInfo.sunday)}
-    </p>
-`;
+weekHeader.innerHTML =
+    "<h2>Неделя №" +
+    weekInfo.weekNumber +
+    "</h2>" +
 
-scheduleContainer.appendChild(weekHeader);
+    "<p>" +
+    formatDate(weekInfo.monday) +
+    " — " +
+    formatDate(weekInfo.sunday) +
+    "</p>";
+
+
+scheduleContainer.appendChild(
+    weekHeader
+);
 
 
 /* =========================
-   ДНИ НЕДЕЛИ
+   ДНИ
    ========================= */
 
-days.forEach(day => {
+days.forEach(function(day) {
 
-    const lessons = scheduleData.schedule.filter(lesson => {
+    const lessons =
+        scheduleData.schedule.filter(
+            function(lesson) {
 
-        /*
-            Проверяем день.
+                /*
+                    Проверяем день.
+                */
 
-            Например:
-            wd = 2 → понедельник
-            wd = 3 → вторник
-        */
-
-        const correctDay =
-            Number(lesson.wd) === day.number;
+                const correctDay =
+                    Number(lesson.wd) === day.number;
 
 
-        /*
-            Проверяем группу.
-        */
+                /*
+                    Проверяем группу.
+                */
 
-        const correctGroup =
-            Array.isArray(lesson.sg) &&
-            lesson.sg.some(
-                item =>
-                    String(item) === String(group)
-            );
-
-
-        /*
-            Проверяем номер недели.
-        */
-
-        const correctWeek =
-            isLessonInWeek(
-                lesson,
-                weekInfo.weekNumber
-            );
+                const correctGroup =
+                    Array.isArray(lesson.sg) &&
+                    lesson.sg.some(
+                        function(item) {
+                            return String(item) === String(group);
+                        }
+                    );
 
 
-        return (
-            correctDay &&
-            correctGroup &&
-            correctWeek
+                /*
+                    Проверяем неделю.
+                */
+
+                const correctWeek =
+                    isLessonInWeek(
+                        lesson,
+                        weekInfo.weekNumber
+                    );
+
+
+                return (
+                    correctDay &&
+                    correctGroup &&
+                    correctWeek
+                );
+            }
         );
-    });
 
 
-    /* =========================
-       БЛОК ДНЯ
-       ========================= */
+    /*
+        Создаём день.
+    */
 
     const dayBlock =
         document.createElement("div");
 
-    dayBlock.className = "day";
+    dayBlock.className =
+        "day";
 
 
     const dayTitle =
@@ -396,12 +460,14 @@ days.forEach(day => {
     dayTitle.textContent =
         day.name;
 
-    dayBlock.appendChild(dayTitle);
+    dayBlock.appendChild(
+        dayTitle
+    );
 
 
-    /* =========================
-       ЕСЛИ НЕТ ЗАНЯТИЙ
-       ========================= */
+    /*
+        Если занятий нет.
+    */
 
     if (lessons.length === 0) {
 
@@ -414,99 +480,124 @@ days.forEach(day => {
         empty.className =
             "no-lessons";
 
-        dayBlock.appendChild(empty);
+        dayBlock.appendChild(
+            empty
+        );
 
     } else {
 
         /*
-            Сортировка по времени начала.
+            Сортировка по времени.
         */
 
-        lessons.sort((a, b) => {
+        lessons.sort(
+            function(a, b) {
 
-            return String(a.ts || "")
-                .localeCompare(
-                    String(b.ts || "")
-                );
-        });
-
-
-        lessons.forEach(lesson => {
-
-            const lessonElement =
-                document.createElement("div");
-
-            lessonElement.className =
-                "lesson";
-
-
-            /*
-                Тип занятия
-            */
-
-            let lessonType = "";
-
-            if (Number(lesson.lt) === 102) {
-                lessonType = "Лекция";
-            } else if (Number(lesson.lt) === 103) {
-                lessonType = "Практика";
-            } else if (lesson.lt) {
-                lessonType = String(lesson.lt);
+                return String(a.ts || "")
+                    .localeCompare(
+                        String(b.ts || "")
+                    );
             }
+        );
 
 
-            /*
-                Создаём карточку занятия.
-            */
+        /*
+            Вывод занятий.
+        */
 
-            lessonElement.innerHTML = `
-                <div class="lesson-time">
-                    ${lesson.ts || ""}
-                    –
-                    ${lesson.te || ""}
-                </div>
+        lessons.forEach(
+            function(lesson) {
 
-                <div class="lesson-subject">
-                    ${lesson.ln || "Без названия"}
-                </div>
+                const lessonElement =
+                    document.createElement("div");
 
-                ${
-                    lessonType
-                        ? `<div class="lesson-type">
-                            ${lessonType}
-                           </div>`
-                        : ""
+                lessonElement.className =
+                    "lesson";
+
+
+                let lessonType = "";
+
+
+                if (Number(lesson.lt) === 102) {
+
+                    lessonType = "Лекция";
+
+                } else if (
+                    Number(lesson.lt) === 103
+                ) {
+
+                    lessonType = "Практика";
+
+                } else if (lesson.lt) {
+
+                    lessonType =
+                        String(lesson.lt);
                 }
 
-                ${
-                    lesson.tn
-                        ? `<div class="lesson-teacher">
-                            ${lesson.tn}
-                           </div>`
-                        : ""
+
+                let html = "";
+
+
+                html +=
+                    "<div class='lesson-time'>" +
+                    (lesson.ts || "") +
+                    " – " +
+                    (lesson.te || "") +
+                    "</div>";
+
+
+                html +=
+                    "<div class='lesson-subject'>" +
+                    (lesson.ln || "Без названия") +
+                    "</div>";
+
+
+                if (lessonType) {
+
+                    html +=
+                        "<div class='lesson-type'>" +
+                        lessonType +
+                        "</div>";
                 }
 
-                ${
-                    lesson.loc
-                        ? `<div class="lesson-location">
-                            ${lesson.loc}
-                           </div>`
-                        : ""
+
+                if (lesson.tn) {
+
+                    html +=
+                        "<div class='lesson-teacher'>" +
+                        lesson.tn +
+                        "</div>";
                 }
 
-                ${
-                    lesson.ws
-                        ? `<div class="lesson-weeks">
-                            Недели: ${lesson.ws}
-                           </div>`
-                        : ""
-                }
-            `;
 
-            dayBlock.appendChild(
-                lessonElement
-            );
-        });
+                if (lesson.loc) {
+
+                    html +=
+                        "<div class='lesson-location'>" +
+                        lesson.loc +
+                        "</div>";
+                }
+
+
+                if (lesson.ws) {
+
+                    html +=
+                        "<div class='lesson-weeks'>" +
+                        "Недели: " +
+                        lesson.ws +
+                        "</div>";
+                }
+
+
+                lessonElement.innerHTML =
+                    html;
+
+
+                dayBlock.appendChild(
+                    lessonElement
+                );
+            }
+        );
     }
 
 
@@ -524,11 +615,12 @@ days.forEach(day => {
 
 groupSelect.addEventListener(
 "change",
-function () {
+function() {
 
 ```
     const selectedGroup =
         String(this.value);
+
 
     if (!selectedGroup) {
 
@@ -536,6 +628,7 @@ function () {
 
         return;
     }
+
 
     showSchedule(selectedGroup);
 }
