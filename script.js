@@ -30,17 +30,29 @@ async function loadSchedule() {
     }
 }
 
-// ================================
-// ЗАГРУЗКА ГРУПП
-// ================================
 
-function loadGroups() {
+// ========================================
+// ЗАПОЛНЯЕМ СПИСОК ГРУПП
+// ========================================
 
-    groupSelect.innerHTML = `
-        <option value="">Выберите группу</option>
-    `;
+function fillGroups() {
 
-    scheduleData.groups.forEach(group => {
+    // Полностью очищаем список
+    groupSelect.innerHTML = "";
+
+    // Первый вариант
+    const defaultOption = document.createElement("option");
+
+    defaultOption.value = "";
+    defaultOption.textContent = "Выберите группу";
+
+    groupSelect.appendChild(defaultOption);
+
+
+    // ВАЖНО:
+    // группы находятся именно в data.groups
+
+    data.groups.forEach(group => {
 
         const option = document.createElement("option");
 
@@ -48,34 +60,49 @@ function loadGroups() {
         option.textContent = group.grp;
 
         groupSelect.appendChild(option);
+
     });
+
+
+    console.log(
+        "В список добавлены группы:",
+        [...groupSelect.options].map(option => option.textContent)
+    );
 }
 
 
-// ================================
+// ========================================
 // ВЫБОР ГРУППЫ
-// ================================
+// ========================================
 
-groupSelect.addEventListener("change", () => {
+groupSelect.addEventListener("change", function () {
 
-    const selectedGroup = groupSelect.value;
+    const group = this.value;
 
-    if (!selectedGroup) {
+    console.log("Выбрана группа:", group);
+
+    if (!group) {
+
         scheduleContainer.innerHTML = "";
+
         return;
     }
 
-    showSchedule(selectedGroup);
+    showSchedule(group);
+
 });
 
 
-// ================================
-// ВЫВОД РАСПИСАНИЯ
-// ================================
+// ========================================
+// ПОКАЗ РАСПИСАНИЯ
+// ========================================
 
 function showSchedule(group) {
 
+    console.log("Показываем расписание группы:", group);
+
     scheduleContainer.innerHTML = "";
+
 
     const days = [
         {
@@ -107,11 +134,15 @@ function showSchedule(group) {
 
     days.forEach(day => {
 
-        // Находим занятия этой группы в этот день
-        const lessons = scheduleData.schedule.filter(lesson => {
+        // Ищем занятия:
+        // 1. нужного дня
+        // 2. относящиеся к выбранной группе
+
+        const lessons = data.schedule.filter(lesson => {
 
             return (
-                lesson.wd === day.number &&
+                Number(lesson.wd) === day.number &&
+                Array.isArray(lesson.sg) &&
                 lesson.sg.includes(group)
             );
 
@@ -119,6 +150,7 @@ function showSchedule(group) {
 
 
         // Сортировка по времени
+
         lessons.sort((a, b) => {
 
             return a.ts.localeCompare(b.ts);
@@ -126,92 +158,130 @@ function showSchedule(group) {
         });
 
 
+        // Создаём день
+
         const dayElement = document.createElement("div");
 
         dayElement.className = "day";
 
 
-        dayElement.innerHTML = `
-            <h2>${day.name}</h2>
-        `;
+        const title = document.createElement("h2");
+
+        title.textContent = day.name;
+
+        dayElement.appendChild(title);
 
 
-        // Если пар нет
+        // Если занятий нет
+
         if (lessons.length === 0) {
 
-            dayElement.innerHTML += `
-                <p>Пар нет</p>
-            `;
+            const empty = document.createElement("p");
 
-        } else {
+            empty.textContent = "Пар нет";
 
-            lessons.forEach(lesson => {
+            dayElement.appendChild(empty);
 
-                const lessonElement = document.createElement("div");
-
-                lessonElement.className = "lesson";
-
-
-                lessonElement.innerHTML = `
-                    <div class="lesson-time">
-                        ${lesson.ts}–${lesson.te}
-                    </div>
-
-                    <div class="lesson-subject">
-                        ${lesson.ln}
-                    </div>
-
-                    <div class="lesson-info">
-                        ${getLessonType(lesson.lt)}
-                    </div>
-
-                    <div class="lesson-info">
-                        ${lesson.tn}
-                    </div>
-
-                    <div class="lesson-info">
-                        ${lesson.loc}
-                    </div>
-
-                    <div class="lesson-info">
-                        Недели: ${lesson.ws}
-                    </div>
-                `;
-
-
-                dayElement.appendChild(lessonElement);
-            });
         }
+
+
+        // Если занятия есть
+
+        lessons.forEach(lesson => {
+
+            const lessonElement = document.createElement("div");
+
+            lessonElement.className = "lesson";
+
+
+            const time = document.createElement("div");
+
+            time.className = "lesson-time";
+
+            time.textContent =
+                `${lesson.ts}–${lesson.te}`;
+
+
+            const subject = document.createElement("div");
+
+            subject.className = "lesson-subject";
+
+            subject.textContent = lesson.ln;
+
+
+            const type = document.createElement("div");
+
+            type.className = "lesson-info";
+
+            type.textContent =
+                getLessonType(lesson.lt);
+
+
+            const teacher = document.createElement("div");
+
+            teacher.className = "lesson-info";
+
+            teacher.textContent =
+                lesson.tn || "";
+
+
+            const room = document.createElement("div");
+
+            room.className = "lesson-info";
+
+            room.textContent =
+                lesson.loc || "";
+
+
+            const weeks = document.createElement("div");
+
+            weeks.className = "lesson-info";
+
+            weeks.textContent =
+                `Недели: ${lesson.ws || "все"}`;
+
+
+            lessonElement.appendChild(time);
+            lessonElement.appendChild(subject);
+            lessonElement.appendChild(type);
+            lessonElement.appendChild(teacher);
+            lessonElement.appendChild(room);
+            lessonElement.appendChild(weeks);
+
+
+            dayElement.appendChild(lessonElement);
+
+        });
 
 
         scheduleContainer.appendChild(dayElement);
 
     });
+
 }
 
 
-// ================================
+// ========================================
 // ТИП ЗАНЯТИЯ
-// ================================
+// ========================================
 
 function getLessonType(type) {
 
-    switch (type) {
-
-        case 102:
-            return "Лекция";
-
-        case 103:
-            return "Практика";
-
-        default:
-            return `Тип занятия: ${type}`;
+    if (Number(type) === 102) {
+        return "Лекция";
     }
+
+    if (Number(type) === 103) {
+        return "Практика";
+    }
+
+    return `Тип занятия: ${type}`;
+
 }
 
 
-// ================================
+// ========================================
 // ЗАПУСК
-// ================================
+// ========================================
 
 loadSchedule();
