@@ -14,9 +14,6 @@ const response = await fetch(
 );
 
 ```
-    if (!response.ok) {
-        throw new Error("HTTP " + response.status);
-    }
 
     scheduleData = await response.json();
 
