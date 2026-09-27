@@ -5,50 +5,33 @@ let scheduleData = {};
 
 async function loadSchedule() {
     try {
-        console.log("1. Начинаем загрузку JSON");
+        const url = new URL("./schedule.json", window.location.href);
 
-        const response = await fetch("./schedule.json");
+        console.log("Страница:", window.location.href);
+        console.log("Запрашиваем JSON:", url.href);
 
-        console.log("2. Fetch выполнен");
+        const response = await fetch(url.href);
+
         console.log("Статус:", response.status);
-        console.log("URL:", response.url);
 
         if (!response.ok) {
             throw new Error(
-                `HTTP ошибка: ${response.status}`
+                `HTTP ${response.status}: ${url.href}`
             );
         }
 
-        console.log("3. Начинаем разбирать JSON");
-
         scheduleData = await response.json();
 
-        console.log("4. JSON успешно загружен");
-        console.log("Данные:", scheduleData);
-
-        console.log("5. Тип данных:", typeof scheduleData);
-
-        console.log(
-            "6. Является массивом:",
-            Array.isArray(scheduleData)
-        );
-
-        console.log(
-            "7. Ключи:",
-            Object.keys(scheduleData)
-        );
+        console.log("JSON загружен:", scheduleData);
 
         loadGroups();
 
-        console.log("8. Группы загружены");
-
     } catch (error) {
-
-        console.error("ОШИБКА:", error);
+        console.error(error);
 
         scheduleContainer.innerHTML = `
             <p style="color:red;">
-                Ошибка: ${error.message}
+                ${error.message}
             </p>
         `;
     }
