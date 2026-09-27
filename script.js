@@ -7,19 +7,30 @@ async function loadSchedule() {
     try {
         const response = await fetch("schedule.json");
 
+        console.log("Статус:", response.status);
+        console.log("URL:", response.url);
+
         if (!response.ok) {
-            throw new Error("Не удалось загрузить расписание");
+            throw new Error(
+                `HTTP ${response.status}: ${response.statusText}`
+            );
         }
 
         scheduleData = await response.json();
 
+        console.log("Расписание загружено:", scheduleData);
+
         loadGroups();
 
     } catch (error) {
-        console.error(error);
+        console.error("Ошибка:", error);
 
         scheduleContainer.innerHTML = `
-            <p>Ошибка загрузки расписания.</p>
+            <p>
+                Ошибка загрузки расписания:
+                <br>
+                ${error.message}
+            </p>
         `;
     }
 }
