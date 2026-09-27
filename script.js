@@ -17,7 +17,7 @@ async function loadSchedule() {
 
         console.log("Расписание загружено:", scheduleData);
 
-        loadGroups();
+        fillGroups();
 
     } catch (error) {
         console.error("Ошибка загрузки:", error);
